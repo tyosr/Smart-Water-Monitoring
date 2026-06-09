@@ -1,0 +1,10 @@
+# AquaMonitor - Système de Surveillance du Niveau d'Eau
+# Version Corrigée et Améliorée
+# Python 3.8+ requis
+
+# Serveur Web
+Flask==3.0.0
+flask-cors==4.0.0
+
+# Communication Série avec Arduino
+pyserial==3.5

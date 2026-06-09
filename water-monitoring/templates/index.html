@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💧 Surveillance Barrage - Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                        'display': ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        water: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        status: {
+                            low: '#10B981',
+                            medium: '#F59E0B',
+                            high: '#EF4444',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wave': 'wave 2s ease-in-out infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'drop': 'drop 1.5s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        wave: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        },
+                        drop: {
+                            '0%': { transform: 'translateY(-20px)', opacity: '0' },
+                            '50%': { opacity: '1' },
+                            '100%': { transform: 'translateY(20px)', opacity: '0' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Glassmorphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Circular progress */
+        .circular-progress {
+            transform: rotate(-90deg);
+        }
+        
+        .circular-progress circle {
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Water animation */
+        .water-drop {
+            animation: drop 1.5s ease-in-out infinite;
+        }
+        
+        .water-drop:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+        
+        .water-drop:nth-child(3) {
+            animation-delay: 1s;
+        }
+        
+        /* Card hover effect */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Status indicator pulse */
+        .status-pulse {
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Gradient backgrounds */
+        .gradient-water {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        }
+        
+        .gradient-success {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+        
+        .gradient-warning {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        }
+        
+        .gradient-danger {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
+    
+    <!-- Navigation -->
+    <nav class="glass sticky top-0 z-50 border-b border-slate-200 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 gradient-water rounded-xl flex items-center justify-center">
+                        <i class="fas fa-water text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-display font-bold text-xl text-slate-800 dark:text-white">
+                            AquaMonitor
+                        </h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Surveillance Barrage</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <!-- Connection Status -->
+                    <div id="connectionStatus" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
+                        <span class="w-2 h-2 rounded-full bg-slate-400 status-pulse"></span>
+                        <span class="text-sm text-slate-600 dark:text-slate-400">Déconnecté</span>
+                    </div>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button id="darkModeToggle" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <i class="fas fa-moon dark:hidden text-slate-600"></i>
+                        <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Hero Section - Current Level -->
+        <section class="mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Main Gauge Card -->
+                <div class="lg:col-span-2 glass rounded-2xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-display font-semibold text-lg flex items-center gap-2">
+                            <i class="fas fa-tachometer-alt text-water-500"></i>
+                            Niveau Actuel
+                        </h2>
+                        <span id="lastUpdate" class="text-sm text-slate-500">--</span>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row items-center gap-8">
+                        <!-- Circular Gauge -->
+                        <div class="relative w-48 h-48 flex-shrink-0">
+                            <svg class="circular-progress w-full h-full" viewBox="0 0 100 100">
+                                <!-- Background circle -->
+                                <circle cx="50" cy="50" r="42" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    stroke-width="8"
+                                    class="text-slate-200 dark:text-slate-700"/>
+                                <!-- Progress circle -->
+                                <circle id="gaugeProgress" cx="50" cy="50" r="42" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    stroke-width="8"
+                                    stroke-linecap="round"
+                                    stroke-dasharray="264"
+                                    stroke-dashoffset="264"
+                                    class="text-water-500 transition-all duration-500"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span id="currentValue" class="text-4xl font-display font-bold text-slate-800 dark:text-white">--</span>
+                                <span class="text-sm text-slate-500">/ 1023</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Info Panel -->
+                        <div class="flex-1 w-full">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                                    <p class="text-sm text-slate-500 mb-1">Pourcentage</p>
+                                    <p id="currentPercentage" class="text-2xl font-display font-bold text-water-600">--%</p>
+                                </div>
+                                <div class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                                    <p class="text-sm text-slate-500 mb-1">État</p>
+                                    <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-200 text-slate-600">
+                                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                        <span class="text-sm font-medium">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Water Animation -->
+                            <div class="mt-4 flex items-center justify-center gap-1 h-12">
+                                <div class="water-drop w-3 h-3 rounded-full bg-water-400"></div>
+                                <div class="water-drop w-3 h-3 rounded-full bg-water-500"></div>
+                                <div class="water-drop w-3 h-3 rounded-full bg-water-600"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="space-y-4">
+                    <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                <i class="fas fa-arrow-down text-emerald-600 dark:text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500">Minimum (24h)</p>
+                                <p id="statMin" class="text-xl font-display font-bold">--</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <i class="fas fa-chart-line text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500">Moyenne (24h)</p>
+                                <p id="statAvg" class="text-xl font-display font-bold">--</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-2xl p-5 card-hover">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                                <i class="fas fa-arrow-up text-rose-600 dark:text-rose-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500">Maximum (24h)</p>
+                                <p id="statMax" class="text-xl font-display font-bold">--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- AI Analysis Section -->
+        <section class="mb-8">
+            <h2 class="font-display font-semibold text-xl mb-4 flex items-center gap-2">
+                <i class="fas fa-brain text-purple-500"></i>
+                Analyses IA
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- AI 1: Trend Analysis -->
+                <div class="glass rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                            <i class="fas fa-chart-area text-purple-600 text-sm"></i>
+                        </div>
+                        <h3 class="font-medium text-sm">Tendance</h3>
+                    </div>
+                    <div id="trendDisplay" class="text-center py-2">
+                        <span class="text-3xl">➡️</span>
+                        <p class="text-sm text-slate-500 mt-1">Analyse...</p>
+                    </div>
+                    <div id="trendAlert" class="hidden mt-2 p-2 rounded-lg bg-rose-100 text-rose-700 text-xs text-center">
+                        ⚠️ Variation rapide!
+                    </div>
+                </div>
+                
+                <!-- AI 2: Classification -->
+                <div class="glass rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                            <i class="fas fa-layer-group text-cyan-600 text-sm"></i>
+                        </div>
+                        <h3 class="font-medium text-sm">Classification</h3>
+                    </div>
+                    <div id="classificationDisplay" class="text-center py-2">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-slate-200 flex items-center justify-center mb-2">
+                            <i class="fas fa-question text-slate-400"></i>
+                        </div>
+                        <p class="text-sm text-slate-500">Analyse...</p>
+                    </div>
+                </div>
+                
+                <!-- AI 3: Prediction -->
+                <div class="glass rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                            <i class="fas fa-magic text-amber-600 text-sm"></i>
+                        </div>
+                        <h3 class="font-medium text-sm">Prédiction 1h</h3>
+                    </div>
+                    <div id="predictionDisplay" class="text-center py-2">
+                        <p class="text-2xl font-display font-bold text-slate-400">--</p>
+                        <p class="text-xs text-slate-500 mt-1">Calcul...</p>
+                    </div>
+                </div>
+                
+                <!-- AI 4: Anomaly Detection -->
+                <div class="glass rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-rose-600 text-sm"></i>
+                        </div>
+                        <h3 class="font-medium text-sm">Anomalies</h3>
+                    </div>
+                    <div id="anomalyDisplay" class="text-center py-2">
+                        <span class="text-3xl">✅</span>
+                        <p class="text-sm text-slate-500 mt-1">Aucune anomalie</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Recommendation Card -->
+        <section class="mb-8">
+            <div id="recommendationCard" class="glass rounded-2xl p-6 border-l-4 border-slate-400">
+                <div class="flex items-start gap-4">
+                    <div id="recIcon" class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-info-circle text-slate-400 text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 id="recTitle" class="font-display font-semibold text-lg mb-1">Chargement...</h3>
+                        <p id="recMessage" class="text-slate-600 dark:text-slate-400 mb-2">Analyse des données en cours</p>
+                        <div id="recAction" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-medium">
+                            <i class="fas fa-clock"></i>
+                            Veuillez patienter
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Real-time Chart -->
+        <section class="mb-8">
+            <div class="glass rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="font-display font-semibold text-lg flex items-center gap-2">
+                        <i class="fas fa-chart-line text-water-500"></i>
+                        Graphique Temps Réel
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-sm text-slate-500">Live</span>
+                    </div>
+                </div>
+                <div class="h-80">
+                    <canvas id="realtimeChart"></canvas>
+                </div>
+            </div>
+        </section>
+        
+        <!-- History Section -->
+        <section class="mb-8">
+            <div class="glass rounded-2xl p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+                    <h2 class="font-display font-semibold text-lg flex items-center gap-2">
+                        <i class="fas fa-history text-water-500"></i>
+                        Historique
+                    </h2>
+                    
+                    <!-- Period Tabs -->
+                    <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                        <button data-period="1h" class="period-tab px-4 py-2 rounded-md text-sm font-medium transition-all bg-white dark:bg-slate-700 shadow-sm">
+                            1 Heure
+                        </button>
+                        <button data-period="24h" class="period-tab px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900">
+                            24 Heures
+                        </button>
+                        <button data-period="7d" class="period-tab px-4 py-2 rounded-md text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900">
+                            7 Jours
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="h-80">
+                    <canvas id="historyChart"></canvas>
+                </div>
+                
+                <!-- History Stats -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                    <div class="text-center">
+                        <p class="text-xs text-slate-500 uppercase tracking-wide">Minimum</p>
+                        <p id="histMin" class="text-lg font-display font-semibold text-emerald-600">--</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-slate-500 uppercase tracking-wide">Maximum</p>
+                        <p id="histMax" class="text-lg font-display font-semibold text-rose-600">--</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-slate-500 uppercase tracking-wide">Moyenne</p>
+                        <p id="histAvg" class="text-lg font-display font-semibold text-blue-600">--</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-slate-500 uppercase tracking-wide">Mesures</p>
+                        <p id="histCount" class="text-lg font-display font-semibold text-slate-700 dark:text-slate-300">--</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Alerts Section -->
+        <section class="mb-8">
+            <div class="glass rounded-2xl p-6">
+                <h2 class="font-display font-semibold text-lg flex items-center gap-2 mb-4">
+                    <i class="fas fa-bell text-amber-500"></i>
+                    Alertes Récentes
+                </h2>
+                <div id="alertsContainer" class="space-y-3">
+                    <p class="text-slate-500 text-center py-4">Aucune alerte récente</p>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+    
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-700 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-slate-500">
+                    💧 Système de Surveillance des Barrages - Arduino + Flask
+                </p>
+                <p class="text-sm text-slate-400">
+                    Mise à jour: <span id="footerUpdate">--</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ==================== CONFIGURATION ====================
+        const API_BASE = '';
+        const UPDATE_INTERVAL = 2000; // 2 secondes
+        
+        // ==================== STATE ====================
+        let currentPeriod = '1h';
+        let realtimeChart = null;
+        let historyChart = null;
+        let updateTimer = null;
+        
+        // ==================== UTILITIES ====================
+        function formatTime(isoString) {
+            if (!isoString) return '--';
+            const date = new Date(isoString);
+            return date.toLocaleTimeString('fr-FR', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        
+        function formatDateTime(isoString) {
+            if (!isoString) return '--';
+            const date = new Date(isoString);
+            return date.toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function getStateColor(state) {
+            const colors = {
+                'faible': { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500', border: 'border-emerald-500' },
+                'normal': { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500', border: 'border-amber-500' },
+                'critique': { bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500', border: 'border-rose-500' }
+            };
+            return colors[state] || colors['normal'];
+        }
+        
+        function getStateLabel(state) {
+            const labels = {
+                'faible': 'Faible',
+                'normal': 'Normal',
+                'critique': 'Critique'
+            };
+            return labels[state] || state;
+        }
+        
+        // ==================== CHARTS ====================
+        function initRealtimeChart() {
+            const ctx = document.getElementById('realtimeChart').getContext('2d');
+            
+            // Gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(14, 165, 233, 0.3)');
+            gradient.addColorStop(1, 'rgba(14, 165, 233, 0.0)');
+            
+            realtimeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Niveau d\'eau',
+                        data: [],
+                        borderColor: '#0ea5e9',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#0ea5e9',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: (context) => `Valeur: ${context.raw}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 8,
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            min: 0,
+                            max: 1023,
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                stepSize: 200
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 500
+                    }
+                }
+            });
+        }
+        
+        function initHistoryChart() {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            
+            historyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Niveau d\'eau',
+                        data: [],
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        pointBackgroundColor: '#10B981',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            min: 0,
+                            max: 1023,
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateRealtimeChart(data) {
+            if (!realtimeChart) return;
+            
+            const labels = data.map(d => formatTime(d.timestamp));
+            const values = data.map(d => d.value);
+            
+            realtimeChart.data.labels = labels;
+            realtimeChart.data.datasets[0].data = values;
+            realtimeChart.update('none');
+        }
+        
+        function updateHistoryChart(data) {
+            if (!historyChart) return;
+            
+            // Échantillonner si trop de points
+            let sampled = data;
+            if (data.length > 200) {
+                const step = Math.ceil(data.length / 200);
+                sampled = data.filter((_, i) => i % step === 0);
+            }
+            
+            const labels = sampled.map(d => formatDateTime(d.timestamp));
+            const values = sampled.map(d => d.value);
+            
+            historyChart.data.labels = labels;
+            historyChart.data.datasets[0].data = values;
+            historyChart.update();
+        }
+        
+        // ==================== UI UPDATES ====================
+        function updateGauge(value, percentage) {
+            const circle = document.getElementById('gaugeProgress');
+            const circumference = 264; // 2 * π * 42
+            const offset = circumference - (percentage / 100) * circumference;
+            
+            circle.style.strokeDashoffset = offset;
+            
+            // Change color based on percentage
+            circle.classList.remove('text-emerald-500', 'text-amber-500', 'text-rose-500', 'text-water-500');
+            if (percentage < 30) {
+                circle.classList.add('text-emerald-500');
+            } else if (percentage < 70) {
+                circle.classList.add('text-amber-500');
+            } else {
+                circle.classList.add('text-rose-500');
+            }
+        }
+        
+        function updateCurrent(data) {
+            document.getElementById('currentValue').textContent = data.value;
+            document.getElementById('currentPercentage').textContent = data.percentage + '%';
+            document.getElementById('lastUpdate').textContent = formatTime(data.timestamp);
+            document.getElementById('footerUpdate').textContent = formatDateTime(data.timestamp);
+            
+            // Update status badge
+            const badge = document.getElementById('statusBadge');
+            const colors = getStateColor(data.state);
+            badge.className = `inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${colors.bg} ${colors.text}`;
+            badge.innerHTML = `
+                <span class="w-2 h-2 rounded-full ${colors.dot}"></span>
+                <span class="text-sm font-medium">${getStateLabel(data.state)}</span>
+            `;
+            
+            // Update gauge
+            updateGauge(data.value, data.percentage);
+            
+            // Update connection status
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-emerald-500 status-pulse"></span>
+                <span class="text-sm text-emerald-600 dark:text-emerald-400">Connecté</span>
+            `;
+            statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30';
+        }
+        
+        function updateStats(stats) {
+            document.getElementById('statMin').textContent = stats.min || '--';
+            document.getElementById('statAvg').textContent = stats.avg || '--';
+            document.getElementById('statMax').textContent = stats.max || '--';
+        }
+        
+        function updateTrend(trend) {
+            const display = document.getElementById('trendDisplay');
+            const icons = {
+                'stable': '➡️',
+                'augmentation': '↗️',
+                'diminution': '↘️'
+            };
+            const labels = {
+                'stable': 'Stable',
+                'augmentation': 'Augmentation',
+                'diminution': 'Diminution'
+            };
+            const colors = {
+                'stable': 'text-slate-600',
+                'augmentation': 'text-emerald-600',
+                'diminution': 'text-rose-600'
+            };
+            
+            display.innerHTML = `
+                <span class="text-3xl">${icons[trend.direction] || '➡️'}</span>
+                <p class="text-sm ${colors[trend.direction] || 'text-slate-600'} mt-1 font-medium">
+                    ${labels[trend.direction] || trend.direction}
+                </p>
+                <p class="text-xs text-slate-400">${trend.speed > 0 ? '+' : ''}${trend.speed}/min</p>
+            `;
+            
+            // Alert
+            const alertEl = document.getElementById('trendAlert');
+            if (trend.alert) {
+                alertEl.classList.remove('hidden');
+            } else {
+                alertEl.classList.add('hidden');
+            }
+        }
+        
+        function updateClassification(classification) {
+            const display = document.getElementById('classificationDisplay');
+            const colors = getStateColor(classification.state);
+            
+            display.innerHTML = `
+                <div class="w-12 h-12 mx-auto rounded-full ${colors.bg} flex items-center justify-center mb-2">
+                    <i class="fas fa-tint ${colors.text}"></i>
+                </div>
+                <p class="text-lg font-display font-bold ${colors.text}">${classification.percentage}%</p>
+                <p class="text-xs text-slate-500">${getStateLabel(classification.state)}</p>
+            `;
+        }
+        
+        function updatePrediction(prediction) {
+            const display = document.getElementById('predictionDisplay');
+            const riskColors = {
+                'stable': 'text-slate-400',
+                'normal': 'text-emerald-600',
+                'eleve': 'text-amber-600',
+                'critique': 'text-rose-600',
+                'faible': 'text-blue-600'
+            };
+            
+            display.innerHTML = `
+                <p class="text-2xl font-display font-bold ${riskColors[prediction.risk_level] || 'text-slate-400'}">
+                    ${prediction.predicted_percentage}%
+                </p>
+                <p class="text-xs text-slate-500 mt-1">${prediction.message}</p>
+            `;
+        }
+        
+        function updateAnomalies(anomalies) {
+            const display = document.getElementById('anomalyDisplay');
+            
+            if (anomalies.length === 0) {
+                display.innerHTML = `
+                    <span class="text-3xl">✅</span>
+                    <p class="text-sm text-slate-500 mt-1">Aucune anomalie</p>
+                `;
+            } else {
+                const critical = anomalies.filter(a => a.severity === 'critique');
+                const icon = critical.length > 0 ? '⚠️' : 'ℹ️';
+                const text = critical.length > 0 ? `${critical.length} anomalie(s) critique(s)` : `${anomalies.length} anomalie(s)`;
+                
+                display.innerHTML = `
+                    <span class="text-3xl">${icon}</span>
+                    <p class="text-sm text-rose-600 mt-1 font-medium">${text}</p>
+                `;
+            }
+        }
+        
+        function updateRecommendation(rec) {
+            const card = document.getElementById('recommendationCard');
+            const iconEl = document.getElementById('recIcon');
+            
+            // Update border color
+            card.className = `glass rounded-2xl p-6 border-l-4 ${rec.level === 'critique' ? 'border-rose-500' : rec.level === 'attention' ? 'border-amber-500' : 'border-emerald-500'}`;
+            
+            // Update icon
+            const iconColors = {
+                'critique': 'bg-rose-100 text-rose-600',
+                'attention': 'bg-amber-100 text-amber-600',
+                'normal': 'bg-emerald-100 text-emerald-600',
+                'faible': 'bg-blue-100 text-blue-600'
+            };
+            iconEl.className = `w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${iconColors[rec.level] || iconColors.normal}`;
+            iconEl.innerHTML = rec.icon || '🟢';
+            
+            // Update text
+            document.getElementById('recTitle').textContent = rec.title;
+            document.getElementById('recMessage').textContent = rec.message;
+            
+            const actionEl = document.getElementById('recAction');
+            const actionColors = {
+                'critique': 'bg-rose-100 text-rose-700',
+                'attention': 'bg-amber-100 text-amber-700',
+                'normal': 'bg-emerald-100 text-emerald-700',
+                'faible': 'bg-blue-100 text-blue-700'
+            };
+            actionEl.className = `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${actionColors[rec.level] || actionColors.normal}`;
+            actionEl.innerHTML = `
+                <i class="fas fa-${rec.level === 'critique' ? 'exclamation-circle' : rec.level === 'attention' ? 'eye' : 'check-circle'}"></i>
+                ${rec.action}
+            `;
+        }
+        
+        function updateAlerts(alerts) {
+            const container = document.getElementById('alertsContainer');
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-center py-4">Aucune alerte récente</p>';
+                return;
+            }
+            
+            container.innerHTML = alerts.slice(0, 5).map(alert => {
+                const severityColors = {
+                    'critique': 'border-rose-500 bg-rose-50 dark:bg-rose-900/20',
+                    'info': 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                };
+                
+                return `
+                    <div class="flex items-start gap-3 p-3 rounded-lg border-l-4 ${severityColors[alert.severity] || severityColors.info}">
+                        <span class="text-lg">${alert.icon || 'ℹ️'}</span>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium">${alert.message}</p>
+                            <p class="text-xs text-slate-500">${formatDateTime(alert.timestamp)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateHistoryStats(stats) {
+            document.getElementById('histMin').textContent = stats.min_percentage !== undefined ? stats.min_percentage + '%' : '--';
+            document.getElementById('histMax').textContent = stats.max_percentage !== undefined ? stats.max_percentage + '%' : '--';
+            document.getElementById('histAvg').textContent = stats.avg_percentage !== undefined ? stats.avg_percentage + '%' : '--';
+            document.getElementById('histCount').textContent = stats.count || '--';
+        }
+        
+        // ==================== API CALLS ====================
+        async function fetchCurrent() {
+            try {
+                const response = await fetch(`${API_BASE}/api/current`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateCurrent(data);
+                }
+            } catch (error) {
+                console.error('Error fetching current:', error);
+                document.getElementById('connectionStatus').innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-rose-500 status-pulse"></span>
+                    <span class="text-sm text-rose-600">Déconnecté</span>
+                `;
+            }
+        }
+        
+        async function fetchRecent() {
+            try {
+                const response = await fetch(`${API_BASE}/api/recent`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateRealtimeChart(data.data);
+                }
+            } catch (error) {
+                console.error('Error fetching recent:', error);
+            }
+        }
+        
+        async function fetchAnalysis() {
+            try {
+                const response = await fetch(`${API_BASE}/api/analysis`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    updateTrend(data.trend);
+                    updateClassification(data.classification);
+                    updatePrediction(data.prediction);
+                    updateAnomalies(data.anomalies);
+                    updateRecommendation(data.recommendation);
+                    updateStats(data.statistics);
+                }
+            } catch (error) {
+                console.error('Error fetching analysis:', error);
+            }
+        }
+        
+        async function fetchHistory(period) {
+            try {
+                const response = await fetch(`${API_BASE}/api/history/${period}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateHistoryChart(data.data);
+                    updateHistoryStats(data.statistics);
+                }
+            } catch (error) {
+                console.error('Error fetching history:', error);
+            }
+        }
+        
+        async function fetchAlerts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/alerts`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateAlerts(data.alerts);
+                }
+            } catch (error) {
+                console.error('Error fetching alerts:', error);
+            }
+        }
+        
+        // ==================== MAIN UPDATE LOOP ====================
+        async function updateAll() {
+            await Promise.all([
+                fetchCurrent(),
+                fetchRecent(),
+                fetchAnalysis()
+            ]);
+        }
+        
+        // ==================== EVENT LISTENERS ====================
+        document.querySelectorAll('.period-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update active state
+                document.querySelectorAll('.period-tab').forEach(t => {
+                    t.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+                    t.classList.add('text-slate-600', 'dark:text-slate-400');
+                });
+                tab.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+                tab.classList.remove('text-slate-600', 'dark:text-slate-400');
+                
+                // Fetch new data
+                currentPeriod = tab.dataset.period;
+                fetchHistory(currentPeriod);
+            });
+        });
+        
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        });
+        
+        // ==================== INITIALIZATION ====================
+        function init() {
+            // Check dark mode preference
+            if (localStorage.getItem('darkMode') === 'true' || 
+                (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            // Initialize charts
+            initRealtimeChart();
+            initHistoryChart();
+            
+            // Initial data fetch
+            updateAll();
+            fetchHistory('1h');
+            fetchAlerts();
+            
+            // Start update loop
+            updateTimer = setInterval(updateAll, UPDATE_INTERVAL);
+            
+            // Refresh alerts less frequently
+            setInterval(fetchAlerts, 30000);
+            
+            // Refresh history periodically
+            setInterval(() => fetchHistory(currentPeriod), 60000);
+        }
+        
+        // Start
+        init();
+    </script>
+</body>
+</html>
